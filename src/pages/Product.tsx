@@ -25,6 +25,14 @@ export default function Product() {
     { slug: slug! },
     { enabled: !!slug },
   );
+  const seoImageKey = data?.product?.images[0]?.imageKey;
+  const seoImageQuery = trpc.catalog.imageUrls.useQuery(
+    { keys: seoImageKey ? [seoImageKey] : [] },
+    { enabled: !!seoImageKey },
+  );
+  const seoImageUrl = seoImageKey
+    ? seoImageQuery.data?.[seoImageKey] ?? null
+    : null;
   const [imgIndex, setImgIndex] = useState(0);
   const [shared, setShared] = useState(false);
 
@@ -35,12 +43,10 @@ export default function Product() {
       title: `${product.name} — Manaaf`,
       description: product.description?.trim().slice(0, 300) ||
         `${product.name}${product.storage ? ` ${product.storage}` : ""} disponible chez Manaaf à Cotonou. Consultez le prix, l'état et la disponibilité.`,
-      image: product.images[0]?.imageKey
-        ? `/api/files/${encodeURIComponent(product.images[0].imageKey)}`
-        : null,
+      image: seoImageUrl,
       type: "product",
     });
-  }, [data?.product, language]);
+  }, [data?.product, language, seoImageUrl]);
 
   if (isLoading) {
     return <div className="mx-auto max-w-6xl px-4 py-20 text-center text-muted-foreground">{t("Chargement…")}</div>;

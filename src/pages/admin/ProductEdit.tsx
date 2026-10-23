@@ -5,6 +5,7 @@ import { trpc } from "@/providers/trpc";
 import { formatPrice, parseSpecs, type Spec } from "@/lib/format";
 import { ImageView } from "@/components/ImageView";
 import { toast } from "sonner";
+import { persistUploadedImage } from "@/lib/persist-uploaded-image";
 
 type FormState = {
   name: string;
@@ -164,6 +165,7 @@ export default function ProductEdit() {
   });
 
   const upload = trpc.storage.upload.useMutation();
+  const removeUpload = trpc.storage.remove.useMutation();
   const addImages = trpc.admin.addImages.useMutation({ onSuccess: invalidate });
   const reorder = trpc.admin.reorderImages.useMutation({
     onSuccess: () => {
@@ -250,7 +252,11 @@ export default function ProductEdit() {
             contentBase64: base64,
             contentType: isSupportedImageType(file.type) ? file.type : undefined,
           });
-          await addImages.mutateAsync({ productId: pid, keys: [res.key] });
+          await persistUploadedImage(
+            res,
+            async (key) => addImages.mutateAsync({ productId: pid, keys: [key] }),
+            async (key) => removeUpload.mutateAsync({ key }),
+          );
         }
         // clear previews after successful upload
         setNewFiles([]);

@@ -2,6 +2,9 @@
   "name": "my-app",
   "private": true,
   "version": "0.0.0",
+  "engines": {
+    "node": ">=22.12.0 <23"
+  },
   "type": "module",
   "scripts": {
     "dev": "node scripts/check-local-database.mjs && vite",
@@ -56,6 +59,7 @@
     "@trpc/server": "^11.8.1",
     "ai": "6.0.290",
     "class-variance-authority": "^0.7.1",
+    "cloudinary": "^2.11.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",

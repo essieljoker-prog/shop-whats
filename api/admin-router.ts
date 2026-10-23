@@ -27,6 +27,7 @@ import {
   recordLoginFailure,
 } from "./lib/login-rate-limit";
 import { storage } from "./lib/storage";
+import { isStorageKeyReferenced } from "./lib/storage-references";
 
 const DUMMY_PASSWORD_HASH = hashPassword(crypto.randomBytes(32).toString("hex"));
 
@@ -353,13 +354,17 @@ export const adminRouter = createRouter({
       });
       if (!img) return { ok: true };
       await db.delete(productImages).where(eq(productImages.id, input.imageId));
-      const otherReferences = await db
-        .select({ id: productImages.id })
-        .from(productImages)
-        .where(eq(productImages.imageKey, img.imageKey))
-        .limit(1);
-      if (otherReferences.length === 0) {
-        await storage.deleteFile({ fileKey: img.imageKey });
+      if (!(await isStorageKeyReferenced(db, img.imageKey))) {
+        try {
+          await storage.deleteFile({ fileKey: img.imageKey });
+        } catch (error) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message:
+              "The image reference was removed, but deleting its storage asset failed. Retry cleanup from storage management.",
+            cause: error,
+          });
+        }
       }
       // Si c'était l'image principale, promouvoir la première restante
       if (img.isPrimary) {

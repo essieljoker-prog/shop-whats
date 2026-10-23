@@ -83,6 +83,9 @@ Les tests de stockage utilisent un dossier temporaire unique et ne nettoient pas
 - Les réponses définissent des en-têtes de base contre le MIME sniffing, le framing, le partage du référent et l'accès aux capteurs. Une CSP de production autorise seulement les ressources nécessaires, dont Google Fonts et la carte Google Maps.
 - Les tentatives de connexion sont limitées en mémoire par nom d'utilisateur ; pour plusieurs instances, une limitation partagée à la couche proxy ou via un stockage commun reste nécessaire.
 - Les téléversements ne dépassent pas 8 Mio et le serveur compare extension, type MIME et signature d'image.
+- En développement et dans les tests, l'absence des variables Cloudinary conserve le stockage local dans `uploads/`. En production, les trois variables serveur `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` et `CLOUDINARY_API_SECRET` sont obligatoires; une configuration partielle est refusée.
+- Les nouvelles images Cloudinary sont enregistrées en base sous la référence interne `cloudinary:v1:<format>:<public_id>`, jamais sous une URL fournisseur. Les anciennes clés locales continuent d'être servies par `/api/files/:key`; aucun transfert automatique n'est effectué.
+- Si l'enregistrement MySQL échoue après un téléversement, l'interface demande une suppression compensatoire. Le serveur refuse cette suppression si la clé est encore référencée par un produit, une catégorie ou une marque; un échec de nettoyage est signalé pour contrôle manuel.
 - Les appels de développement et les commandes `db:migrate` / `db:push` sont refusés si la cible n'est pas une base MySQL locale explicitement dédiée.
 - Aucune opération de production n'est effectuée par ces étapes.
 

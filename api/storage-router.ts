@@ -1,6 +1,12 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { createRouter, adminQuery } from "./middleware";
-import { storage } from "./lib/storage";
+import { getDb } from "./queries/connection";
+import { storage, StorageError } from "./lib/storage";
+import {
+  deleteUnreferencedStorageKey,
+  isStorageKeyReferenced,
+} from "./lib/storage-references";
 
 /**
  * Uploads/suppressions réservés à l'admin.
@@ -37,7 +43,20 @@ export const storageRouter = createRouter({
 
   remove: adminQuery
     .input(z.object({ key: z.string() }))
-    .mutation(async ({ input }) => ({
-      ok: await storage.deleteFile({ fileKey: input.key }),
-    })),
+    .mutation(async ({ input }) => {
+      try {
+        return {
+          ok: await deleteUnreferencedStorageKey(
+            input.key,
+            (key) => isStorageKeyReferenced(getDb(), key),
+            async (key) => storage.deleteFile({ fileKey: key }),
+          ),
+        };
+      } catch (error) {
+        if (error instanceof StorageError && error.code === "STORAGE_FORBIDDEN") {
+          throw new TRPCError({ code: "CONFLICT", message: error.message, cause: error });
+        }
+        throw error;
+      }
+    }),
 });
